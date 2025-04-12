@@ -1,0 +1,241 @@
+/* Custom CSS for Supply Chain Manager */
+
+/* Avatar circle for profile pages */
+.avatar-circle {
+    width: 100px;
+    height: 100px;
+    background-color: var(--bs-primary);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.avatar-circle .initials {
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+}
+
+/* Product card hover effect */
+.product-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Custom badge styles */
+.badge-outline-primary {
+    color: var(--bs-primary);
+    background-color: transparent;
+    border: 1px solid var(--bs-primary);
+}
+
+/* Dashboard widgets */
+.stat-card {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Custom button styles */
+.btn-rounded {
+    border-radius: 50px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+/* Custom tooltip */
+.custom-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: var(--bs-dark);
+    color: var(--bs-light);
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.custom-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Timeline for order tracking */
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    height: 100%;
+    width: 2px;
+    background-color: var(--bs-border-color);
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--bs-primary);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+.timeline-panel {
+    width: 45%;
+    float: left;
+    position: relative;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+    background-color: var(--bs-body-bg);
+}
+
+.timeline-panel:after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: -10px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 10px solid var(--bs-body-bg);
+}
+
+.timeline-item:nth-child(even) .timeline-panel {
+    float: right;
+}
+
+.timeline-item:nth-child(even) .timeline-panel:after {
+    left: -10px;
+    right: auto;
+    border-right: 10px solid var(--bs-body-bg);
+    border-left: 0;
+}
+
+/* Notification dot */
+.notification-dot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    background-color: var(--bs-danger);
+    border-radius: 50%;
+}
+
+/* Order status badges */
+.status-pending {
+    background-color: var(--bs-warning);
+    color: var(--bs-dark);
+}
+
+.status-processing {
+    background-color: var(--bs-info);
+    color: var(--bs-white);
+}
+
+.status-shipped {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+}
+
+.status-delivered {
+    background-color: var(--bs-success);
+    color: var(--bs-white);
+}
+
+.status-cancelled {
+    background-color: var(--bs-danger);
+    color: var(--bs-white);
+}
+
+/* Inventory status indicators */
+.inventory-status {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.inventory-low {
+    background-color: var(--bs-warning);
+}
+
+.inventory-out {
+    background-color: var(--bs-danger);
+}
+
+.inventory-ok {
+    background-color: var(--bs-success);
+}
+
+/* Navbar adjustments */
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Footer adjustments */
+footer {
+    margin-top: 50px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeline:before {
+        left: 40px;
+    }
+    
+    .timeline-badge {
+        left: 40px;
+    }
+    
+    .timeline-panel {
+        width: calc(100% - 90px);
+        float: right;
+    }
+    
+    .timeline-item:nth-child(even) .timeline-panel:after {
+        left: -10px;
+        border-right: 10px solid var(--bs-body-bg);
+        border-left: 0;
+    }
+}

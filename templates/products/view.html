@@ -1,0 +1,210 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ product.name }} - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Product Details</h1>
+        <div>
+            {% if can_edit_product(current_user, product) %}
+                <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit"></i> Edit Product
+                </a>
+            {% endif %}
+            {% if can_delete_product(current_user, product) %}
+                <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteProductModal">
+                    <i class="fas fa-trash"></i> Delete Product
+                </button>
+            {% endif %}
+            <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Products
+            </a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-light">
+                    <h5 class="mb-0">Product Image</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% if product.image_path %}
+                        <img src="{{ url_for('static', filename=product.image_path) }}" class="img-fluid rounded" alt="{{ product.name }}" style="max-height: 300px;">
+                    {% else %}
+                        <div class="text-center py-5 h-100 d-flex flex-column justify-content-center align-items-center bg-secondary bg-opacity-25">
+                            <i class="fas fa-box fa-5x text-secondary mb-3"></i>
+                            <p class="text-muted">No image available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-light">
+                    <h5 class="mb-0">Product Information</h5>
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title mb-4">{{ product.name }}</h2>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-primary">{{ product.category|format_category }}</span>
+                        <span class="badge bg-info">{{ product.gender|format_gender }}</span>
+                        {% if product.size %}
+                            <span class="badge bg-secondary">Size: {{ product.size }}</span>
+                        {% endif %}
+                        {% if product.color %}
+                            <span class="badge bg-secondary">Color: {{ product.color }}</span>
+                        {% endif %}
+                        {% if product.pattern %}
+                            <span class="badge bg-secondary">Pattern: {{ product.pattern }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th scope="row" style="width: 30%;">SKU</th>
+                                <td>{{ product.sku }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Price</th>
+                                <td>${{ "%.2f"|format(product.price) }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Created On</th>
+                                <td>{{ product.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% if inventory %}
+                                <tr>
+                                    <th scope="row">Current Stock</th>
+                                    <td>
+                                        {% if inventory.quantity <= inventory.min_stock_level %}
+                                            <span class="text-danger">{{ inventory.quantity }}</span>
+                                            <span class="badge bg-warning text-dark ms-2">Low Stock</span>
+                                        {% else %}
+                                            <span>{{ inventory.quantity }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Min Stock Level</th>
+                                    <td>{{ inventory.min_stock_level }}</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Last Updated</th>
+                                    <td>{{ inventory.last_updated.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                    
+                    {% if product.description %}
+                        <h5 class="card-subtitle mb-2">Description</h5>
+                        <p class="card-text">{{ product.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        {% if inventory %}
+                            <a href="{{ url_for('update_inventory', inventory_id=inventory.id) }}" class="btn btn-success">
+                                <i class="fas fa-warehouse"></i> Update Inventory
+                            </a>
+                        {% endif %}
+                        
+                        {% if current_user.role in ['retailer', 'customer', 'wholesaler'] %}
+                            {% if inventory and inventory.user_id != current_user.id %}
+                                {% set supplier_inventory = supplier_inventory_data[product.id] if product.id in supplier_inventory_data else None %}
+                                {% if supplier_inventory and supplier_inventory.quantity > 0 %}
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#orderProductModal">
+                                        <i class="fas fa-shopping-cart"></i> Order This Product
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-secondary" disabled>
+                                        <i class="fas fa-shopping-cart"></i> Out of Stock
+                                    </button>
+                                {% endif %}
+                            {% elif not inventory %}
+                                {% set supplier_inventory = supplier_inventory_data[product.id] if product.id in supplier_inventory_data else None %}
+                                {% if supplier_inventory and supplier_inventory.quantity > 0 %}
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#orderProductModal">
+                                        <i class="fas fa-shopping-cart"></i> Order This Product
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-secondary" disabled>
+                                        <i class="fas fa-shopping-cart"></i> Out of Stock
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Product Modal -->
+{% if current_user.role in ['retailer', 'customer', 'wholesaler'] %}
+<div class="modal fade" id="orderProductModal" tabindex="-1" aria-labelledby="orderProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderProductModalLabel">Order {{ product.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if supplier_inventory and supplier_inventory.quantity > 0 %}
+                    <p>{{ supplier_inventory.quantity }} units available from supplier.</p>
+                    <p>To order this product, you can:</p>
+                    <ol>
+                        <li>Create a new order with this product</li>
+                        <li>Add this product to an existing pending order</li>
+                    </ol>
+                    <p>What would you like to do?</p>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i> This product is currently out of stock
+                    </div>
+                    <p>Please check back later or contact the supplier for more information.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                {% if supplier_inventory and supplier_inventory.quantity > 0 %}
+                    <a href="{{ url_for('create_order', product_id=product.id) }}" class="btn btn-primary">Create New Order</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Delete Product Modal -->
+{% if can_delete_product(current_user, product) %}
+<div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteProductModalLabel">Delete Product</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the product "{{ product.name }}"?</p>
+                <p class="text-danger"><strong>Warning:</strong> This action cannot be undone. All inventory data related to this product will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('delete_product', product_id=product.id) }}" method="POST">
+                    {{ form.hidden_tag() if form }}
+                    <button type="submit" class="btn btn-danger">Delete Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

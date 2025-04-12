@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Order - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Create New Order</h1>
+        <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Orders
+        </a>
+    </div>
+    
+    <!-- Order Creation Form -->
+    <div class="card">
+        <div class="card-header bg-dark text-light">
+            <h5 class="mb-0">Order Details</h5>
+        </div>
+        <div class="card-body">
+            {% if form.supplier_id.choices|length > 0 %}
+                <form method="POST" action="{{ url_for('create_order') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.supplier_id.label(class="form-label") }}
+                            {% if form.supplier_id.errors %}
+                                {{ form.supplier_id(class="form-select is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.supplier_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.supplier_id(class="form-select") }}
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Select the supplier you want to order from.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            {{ form.customer_notes.label(class="form-label") }}
+                            {% if form.customer_notes.errors %}
+                                {{ form.customer_notes(class="form-control is-invalid", rows=3) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.customer_notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.customer_notes(class="form-control", rows=3, placeholder="Optional: Any special instructions or notes for the supplier") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if product %}
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            {% if product.image_path %}
+                                <img src="{{ url_for('static', filename=product.image_path.replace('static/', '')) }}" alt="{{ product.name }}" class="me-3" style="width: 80px; height: 80px; object-fit: cover;">
+                            {% else %}
+                                <div class="me-3 bg-light d-flex align-items-center justify-content-center rounded" style="width: 80px; height: 80px;">
+                                    <i class="fas fa-box fa-2x text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <h5 class="mb-1">{{ product.name }}</h5>
+                                <p class="mb-0 small">You are creating an order that will include this product.</p>
+                                <p class="mb-0 small">Price: <strong>${{ "%.2f"|format(product.price) }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> After creating the order, you'll be able to add products.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i> 
+                    There are no suppliers available for your role. 
+                    {% if current_user.role == 'customer' %}
+                        No retailers are registered in the system yet.
+                    {% elif current_user.role == 'retailer' %}
+                        No wholesalers are registered in the system yet.
+                    {% elif current_user.role == 'wholesaler' %}
+                        No manufacturers are registered in the system yet.
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Orders
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Order Process Information -->
+    <div class="card mt-4">
+        <div class="card-header bg-dark text-light">
+            <h5 class="mb-0">Order Process</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 text-center mb-3">
+                    <div class="border rounded p-3 h-100 d-flex flex-column justify-content-center">
+                        <div class="fs-1 mb-2 text-primary">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h5>1. Create Order</h5>
+                        <p class="text-muted small">Select supplier and create order</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center mb-3">
+                    <div class="border rounded p-3 h-100 d-flex flex-column justify-content-center">
+                        <div class="fs-1 mb-2 text-info">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <h5>2. Add Products</h5>
+                        <p class="text-muted small">Add items to your order</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center mb-3">
+                    <div class="border rounded p-3 h-100 d-flex flex-column justify-content-center">
+                        <div class="fs-1 mb-2 text-warning">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <h5>3. Review Order</h5>
+                        <p class="text-muted small">Confirm your order details</p>
+                    </div>
+                </div>
+                <div class="col-md-3 text-center mb-3">
+                    <div class="border rounded p-3 h-100 d-flex flex-column justify-content-center">
+                        <div class="fs-1 mb-2 text-success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h5>4. Order Processed</h5>
+                        <p class="text-muted small">Supplier fulfills your order</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

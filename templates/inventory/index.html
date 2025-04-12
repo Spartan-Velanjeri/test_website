@@ -1,0 +1,242 @@
+{% extends "layout.html" %}
+
+{% block title %}Inventory Management - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold">Inventory Management</h1>
+        <p class="text-muted">Track and manage your product inventory</p>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Your Inventory</h5>
+            <form id="inventoryFilterForm" method="GET" action="{{ url_for('inventory') }}" class="d-flex align-items-center">
+                <div class="input-group me-2">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-start-0" placeholder="Search by name or SKU..." value="{{ request.args.get('search', '') }}">
+                </div>
+                
+                <select name="category" class="form-select me-2">
+                    <option value="">All Categories</option>
+                    {% for value, label in categories %}
+                        <option value="{{ value }}" {% if request.args.get('category') == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                
+                <select name="filter" class="form-select me-2">
+                    <option value="">All Stock Levels</option>
+                    <option value="low_stock" {% if request.args.get('filter') == 'low_stock' %}selected{% endif %}>Low Stock Only</option>
+                </select>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i> Filter
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if inventory.items %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col" width="70">Image</th>
+                            <th scope="col">Product</th>
+                            <th scope="col">Category</th>
+                            <th scope="col">SKU</th>
+                            <th scope="col" class="text-center">Quantity</th>
+                            <th scope="col" class="text-center">Min. Stock Level</th>
+                            <th scope="col" class="text-center">Status</th>
+                            <th scope="col" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in inventory.items %}
+                            <tr>
+                                <td>
+                                    {% if item.product.image_path %}
+                                        <img src="{{ url_for('static', filename=item.product.image_path.replace('static/', '')) }}" alt="{{ item.product.name }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 50px; height: 50px;">
+                                            <i class="fas fa-box text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('view_product', product_id=item.product.id) }}" class="text-decoration-none">
+                                        {{ item.product.name }}
+                                    </a>
+                                </td>
+                                <td>{{ item.product.category|format_category }}</td>
+                                <td><span class="badge bg-light text-dark">{{ item.product.sku }}</span></td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-center">{{ item.min_stock_level }}</td>
+                                <td class="text-center">
+                                    {% if item.quantity <= 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                    {% elif item.quantity <= item.min_stock_level %}
+                                        <span class="badge bg-warning text-dark">Low Stock</span>
+                                    {% else %}
+                                        <span class="badge bg-success">In Stock</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-primary update-inventory-btn" 
+                                           data-bs-toggle="modal" 
+                                           data-bs-target="#updateInventoryModal"
+                                           data-inventory-id="{{ item.id }}"
+                                           data-product-name="{{ item.product.name }}"
+                                           data-quantity="{{ item.quantity }}"
+                                           data-min-stock="{{ item.min_stock_level }}">
+                                        <i class="fas fa-edit me-1"></i> Update
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if inventory.pages > 1 %}
+                <div class="d-flex justify-content-center py-4">
+                    <nav aria-label="Inventory pagination">
+                        <ul class="pagination">
+                            {% if inventory.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('inventory', page=inventory.prev_num, search=request.args.get('search', ''), category=request.args.get('category', ''), filter=request.args.get('filter', '')) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in inventory.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                {% if page_num %}
+                                    <li class="page-item {{ 'active' if page_num == inventory.page else '' }}">
+                                        <a class="page-link" href="{{ url_for('inventory', page=page_num, search=request.args.get('search', ''), category=request.args.get('category', ''), filter=request.args.get('filter', '')) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#">...</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if inventory.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('inventory', page=inventory.next_num, search=request.args.get('search', ''), category=request.args.get('category', ''), filter=request.args.get('filter', '')) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center p-5">
+                <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                <h5>No inventory items found</h5>
+                <p class="text-muted">
+                    {% if request.args.get('search') or request.args.get('category') or request.args.get('filter') %}
+                        Try adjusting your search filters
+                    {% else %}
+                        You don't have any products in your inventory yet
+                    {% endif %}
+                </p>
+                
+                <a href="{{ url_for('inventory') }}" class="btn btn-outline-primary mt-2">
+                    <i class="fas fa-sync-alt me-1"></i> View All Inventory
+                </a>
+                
+                <a href="{{ url_for('products') }}" class="btn btn-primary mt-2 ms-2">
+                    <i class="fas fa-box me-1"></i> Browse Products
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Update Inventory Modal -->
+<div class="modal fade" id="updateInventoryModal" tabindex="-1" aria-labelledby="updateInventoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateInventoryModalLabel">Update Inventory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateInventoryForm" method="POST">
+                    {{ form.hidden_tag() if form }}
+                    <input type="hidden" id="inventoryIdInput" name="inventory_id" value="">
+                    
+                    <div class="mb-3">
+                        <label for="productNameDisplay" class="form-label">Product</label>
+                        <input type="text" class="form-control" id="productNameDisplay" readonly>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quantityInput" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantityInput" name="quantity" min="0" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="minStockInput" class="form-label">Minimum Stock Level</label>
+                        <input type="number" class="form-control" id="minStockInput" name="min_stock_level" min="1" required>
+                        <div class="form-text">You'll receive alerts when stock falls below this level</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update inventory modal
+        const updateBtns = document.querySelectorAll('.update-inventory-btn');
+        updateBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const inventoryId = this.getAttribute('data-inventory-id');
+                const productName = this.getAttribute('data-product-name');
+                const quantity = this.getAttribute('data-quantity');
+                const minStock = this.getAttribute('data-min-stock');
+                
+                document.getElementById('inventoryIdInput').value = inventoryId;
+                document.getElementById('productNameDisplay').value = productName;
+                document.getElementById('quantityInput').value = quantity;
+                document.getElementById('minStockInput').value = minStock;
+                
+                document.getElementById('updateInventoryForm').action = "{{ url_for('update_inventory', inventory_id=0) }}".replace('0', inventoryId);
+            });
+        });
+    });
+</script>
+{% endblock %}

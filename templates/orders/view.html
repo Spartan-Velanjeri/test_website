@@ -1,0 +1,329 @@
+{% extends "layout.html" %}
+
+{% block title %}Order #{{ order.order_number }} - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            Order #{{ order.order_number }}
+            {% if order.status == 'pending' %}
+                <span class="badge bg-warning text-dark">Pending</span>
+            {% elif order.status == 'processing' %}
+                <span class="badge bg-info text-dark">Processing</span>
+            {% elif order.status == 'shipped' %}
+                <span class="badge bg-primary">Shipped</span>
+            {% elif order.status == 'delivered' %}
+                <span class="badge bg-success">Delivered</span>
+            {% elif order.status == 'cancelled' %}
+                <span class="badge bg-danger">Cancelled</span>
+            {% endif %}
+        </h1>
+        <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Orders
+        </a>
+    </div>
+    
+    <!-- Order Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-light">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th scope="row">Order Number</th>
+                                <td>{{ order.order_number }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Date Created</th>
+                                <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Last Updated</th>
+                                <td>{{ order.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Total Amount</th>
+                                <td>${{ "%.2f"|format(order.total_amount) }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Status</th>
+                                <td>
+                                    {% if order.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% elif order.status == 'processing' %}
+                                        <span class="badge bg-info text-dark">Processing</span>
+                                    {% elif order.status == 'shipped' %}
+                                        <span class="badge bg-primary">Shipped</span>
+                                    {% elif order.status == 'delivered' %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% elif order.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-light">
+                    <h5 class="mb-0">Customer & Supplier</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6>Customer</h6>
+                            <p>
+                                <strong>Name:</strong> {{ order.customer.company_name or order.customer.username }}<br>
+                                <strong>Role:</strong> {{ order.customer.role|title }}<br>
+                                <strong>Email:</strong> {{ order.customer.email }}
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <h6>Supplier</h6>
+                            {% if order.supplier %}
+                                <p>
+                                    <strong>Name:</strong> {{ order.supplier.company_name or order.supplier.username }}<br>
+                                    <strong>Role:</strong> {{ order.supplier.role|title }}<br>
+                                    <strong>Email:</strong> {{ order.supplier.email }}
+                                </p>
+                            {% else %}
+                                <p class="text-muted">No supplier assigned</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if order.customer_notes %}
+                        <div class="alert alert-info mt-3">
+                            <h6>Customer Notes:</h6>
+                            <p class="mb-0">{{ order.customer_notes }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Items -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Order Items</h5>
+            {% if order.status == 'pending' and order.customer_id == current_user.id and item_form %}
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if order.items %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>SKU</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Subtotal</th>
+                                {% if order.status == 'pending' and order.customer_id == current_user.id %}
+                                    <th>Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items %}
+                                <tr>
+                                    <td>
+                                        {% if item.product.image_path %}
+                                            <img src="{{ url_for('static', filename=item.product.image_path) }}" 
+                                                 alt="{{ item.product.name }}" class="img-thumbnail me-2" 
+                                                 style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% endif %}
+                                        {{ item.product.name }}
+                                    </td>
+                                    <td>{{ item.product.sku }}</td>
+                                    <td>${{ "%.2f"|format(item.unit_price) }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ "%.2f"|format(item.unit_price * item.quantity) }}</td>
+                                    {% if order.status == 'pending' and order.customer_id == current_user.id %}
+                                        <td>
+                                            <form action="{{ url_for('remove_order_item', order_id=order.id, item_id=item.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to remove this item?');">
+                                                    <i class="fas fa-trash"></i> Remove
+                                                </button>
+                                            </form>
+                                        </td>
+                                    {% endif %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-dark">
+                                <td colspan="4" class="text-end fw-bold">Total:</td>
+                                <td class="fw-bold">${{ "%.2f"|format(order.total_amount) }}</td>
+                                {% if order.status == 'pending' and order.customer_id == current_user.id %}
+                                    <td></td>
+                                {% endif %}
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> This order has no items yet.
+                    {% if order.status == 'pending' and order.customer_id == current_user.id and item_form %}
+                        <button type="button" class="btn btn-primary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Order Actions -->
+    <div class="card">
+        <div class="card-header bg-dark text-light">
+            <h5 class="mb-0">Order Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2">
+                {% if order.supplier_id == current_user.id %}
+                    {% if order.status == 'pending' %}
+                        <form action="{{ url_for('update_order_status', order_id=order.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="processing">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-cog"></i> Start Processing
+                            </button>
+                        </form>
+                    {% elif order.status == 'processing' %}
+                        <form action="{{ url_for('update_order_status', order_id=order.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="shipped">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-shipping-fast"></i> Mark as Shipped
+                            </button>
+                        </form>
+                    {% elif order.status == 'shipped' %}
+                        <form action="{{ url_for('update_order_status', order_id=order.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="delivered">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle"></i> Mark as Delivered
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+                
+                {% if order.customer_id == current_user.id %}
+                    {% if order.status == 'pending' %}
+                        <form action="{{ url_for('update_order_status', order_id=order.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="cancelled">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this order?');">
+                                <i class="fas fa-times"></i> Cancel Order
+                            </button>
+                        </form>
+                    {% elif order.status == 'shipped' %}
+                        <form action="{{ url_for('update_order_status', order_id=order.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="status" value="delivered">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-box-open"></i> Mark as Received
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+                
+                <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Orders
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Modal -->
+{% if order.status == 'pending' and order.customer_id == current_user.id and item_form %}
+<div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addItemModalLabel">Add Item to Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_order_item', order_id=order.id) }}">
+                <div class="modal-body">
+                    {{ item_form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ item_form.product_id.label(class="form-label") }}
+                        {% if item_form.product_id.errors %}
+                            {{ item_form.product_id(class="form-select is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in item_form.product_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ item_form.product_id(class="form-select") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ item_form.quantity.label(class="form-label") }}
+                        {% if item_form.quantity.errors %}
+                            {{ item_form.quantity(class="form-control is-invalid", min="1") }}
+                            <div class="invalid-feedback">
+                                {% for error in item_form.quantity.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ item_form.quantity(class="form-control", min="1", value="1") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ item_form.unit_price.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {% if item_form.unit_price.errors %}
+                                {{ item_form.unit_price(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in item_form.unit_price.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ item_form.unit_price(class="form-control", id="unit_price") }}
+                            {% endif %}
+                        </div>
+                        <small class="form-text text-muted">Leave empty to use the product's default price.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    {{ item_form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/orders.js') }}"></script>
+{% endblock %}

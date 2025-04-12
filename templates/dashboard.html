@@ -1,0 +1,256 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold">Dashboard</h1>
+            <p class="text-muted">Welcome back, {{ current_user.username }}!</p>
+        </div>
+        <div>
+            <span class="badge bg-primary">{{ current_user.role|title }}</span>
+            {% if current_user.company_name %}
+                <span class="badge bg-secondary ms-2">{{ current_user.company_name }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-primary">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                        <h3 class="h2 mb-0">{{ inventory_count }}</h3>
+                    </div>
+                    <h5 class="card-title">Inventory Items</h5>
+                    <p class="card-text text-muted">Total products in your inventory</p>
+                    <a href="{{ url_for('inventory') }}" class="btn btn-sm btn-outline-primary">
+                        View Inventory <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-warning">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                        <h3 class="h2 mb-0">{{ low_stock_count }}</h3>
+                    </div>
+                    <h5 class="card-title">Low Stock Items</h5>
+                    <p class="card-text text-muted">Products below minimum stock level</p>
+                    <a href="{{ url_for('inventory', filter='low_stock') }}" class="btn btn-sm btn-outline-warning">
+                        Check Low Stock <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-info">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
+                        </div>
+                        <h3 class="h2 mb-0">{{ open_orders_count }}</h3>
+                    </div>
+                    <h5 class="card-title">Open Orders</h5>
+                    <p class="card-text text-muted">Orders in pending or processing status</p>
+                    <a href="{{ url_for('orders') }}" class="btn btn-sm btn-outline-info">
+                        Manage Orders <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Low Stock Alerts -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2 text-warning"></i>Low Stock Alerts</h5>
+                    <a href="{{ url_for('inventory', filter='low_stock') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if low_stock_items %}
+                        <div class="list-group list-group-flush">
+                            {% for item in low_stock_items %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            {% if item.product.image_path %}
+                                                <img src="{{ url_for('static', filename=item.product.image_path.replace('static/', '')) }}" alt="{{ item.product.name }}" class="img-thumbnail me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-light d-flex align-items-center justify-content-center rounded me-3" style="width: 50px; height: 50px;">
+                                                    <i class="fas fa-box text-muted"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                <small class="text-muted">SKU: {{ item.product.sku }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <h6 class="mb-0 {% if item.quantity <= 0 %}text-danger{% else %}text-warning{% endif %}">
+                                                {{ item.quantity }} in stock
+                                            </h6>
+                                            <small class="text-muted">Min: {{ item.min_stock_level }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center p-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5>No Low Stock Items</h5>
+                            <p class="text-muted">All inventory items are above their minimum stock levels</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history me-2 text-info"></i>Recent Activity</h5>
+                    <a href="{{ url_for('notifications') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_activities %}
+                        <div class="list-group list-group-flush">
+                            {% for activity in recent_activities %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 {% if not activity.read %}fw-bold{% endif %}">
+                                                {% if activity.notification_type == 'order_status' %}
+                                                    <i class="fas fa-shopping-cart text-primary me-2"></i>
+                                                {% elif activity.notification_type == 'low_stock' %}
+                                                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                {% elif activity.notification_type == 'inventory_update' %}
+                                                    <i class="fas fa-box text-success me-2"></i>
+                                                {% else %}
+                                                    <i class="fas fa-bell text-info me-2"></i>
+                                                {% endif %}
+                                                {{ activity.message }}
+                                            </h6>
+                                            <small class="text-muted">{{ activity.created_at.strftime('%b %d, %Y at %H:%M') }}</small>
+                                        </div>
+                                        {% if not activity.read %}
+                                            <span class="badge bg-primary">New</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center p-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5>No Recent Activities</h5>
+                            <p class="text-muted">You don't have any recent notifications</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-primary"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% if current_user.role == Role.MANUFACTURER %}
+                            <div class="col-md-3">
+                                <a href="{{ url_for('create_product') }}" class="btn btn-outline-primary w-100 py-3">
+                                    <i class="fas fa-box-open d-block mb-2 fa-2x"></i>
+                                    Add New Product
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                        {% if current_user.role != Role.MANUFACTURER %}
+                        <div class="col-md-3">
+                            <a href="{{ url_for('create_order') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-cart-plus d-block mb-2 fa-2x"></i>
+                                Create Order
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-primary w-100 py-3" data-bs-toggle="modal" data-bs-target="#quickInventoryModal">
+                                <i class="fas fa-cubes d-block mb-2 fa-2x"></i>
+                                Update Inventory
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <a href="{{ url_for('orders') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-clipboard-list d-block mb-2 fa-2x"></i>
+                                Manage Orders
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Inventory Update Modal -->
+<div class="modal fade" id="quickInventoryModal" tabindex="-1" aria-labelledby="quickInventoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickInventoryModalLabel">Quick Inventory Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('update_inventory', inventory_id=0) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="product_id" class="form-label">Select Product</label>
+                        <select class="form-select" id="product_id" name="product_id" required>
+                            <option value="">Choose a product...</option>
+                            {% for product in products %}
+                                <option value="{{ product.id }}">{{ product.name }} ({{ product.sku }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="min_stock_level" class="form-label">Minimum Stock Level</label>
+                        <input type="number" class="form-control" id="min_stock_level" name="min_stock_level" min="1" value="10" required>
+                        <div class="form-text">You'll receive alerts when stock falls below this level</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Update Inventory
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+
+{% block title %}Add Item to Order - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Add Item to Order #{{ order.order_number }}</h1>
+        <a href="{{ url_for('view_order', order_id=order.id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Order
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-dark text-light">
+            <h5 class="mb-0">Item Details</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('add_order_item', order_id=order.id) }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    {{ form.product_id.label(class="form-label") }}
+                    {% if form.product_id.errors %}
+                        {{ form.product_id(class="form-select is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.product_id.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.product_id(class="form-select") }}
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.quantity.label(class="form-label") }}
+                    {% if form.quantity.errors %}
+                        {{ form.quantity(class="form-control is-invalid", min="1") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.quantity.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ form.quantity(class="form-control", min="1", value="1") }}
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3" id="price-display-container">
+                    <label class="form-label">Unit Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <span class="form-control" id="product-price-display">0.00</span>
+                    </div>
+                    <small class="form-text text-muted">The price is automatically set based on the product.</small>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('view_order', order_id=order.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get product price when product selection changes
+        const productSelect = document.getElementById('product_id');
+        const priceDisplay = document.getElementById('product-price-display');
+        
+        function updateProductPrice() {
+            const productId = productSelect.value;
+            if (productId) {
+                fetch(`/api/product/${productId}/price`)
+                    .then(response => response.json())
+                    .then(data => {
+                        priceDisplay.textContent = parseFloat(data.price).toFixed(2);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching product price:', error);
+                    });
+            } else {
+                priceDisplay.textContent = '0.00';
+            }
+        }
+        
+        // Update price on page load if product is pre-selected
+        if (productSelect.value) {
+            updateProductPrice();
+        }
+        
+        // Update price when product selection changes
+        productSelect.addEventListener('change', updateProductPrice);
+    });
+</script>
+{% endblock %}

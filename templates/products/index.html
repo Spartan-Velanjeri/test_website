@@ -1,0 +1,244 @@
+{% extends "layout.html" %}
+
+{% block title %}Products - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold">Products</h1>
+        <p class="text-muted">Browse and manage your product catalog</p>
+    </div>
+    {% if current_user.role == 'manufacturer' %}
+    <div>
+        <a href="{{ url_for('create_product') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Add New Product
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-box me-2"></i>Product Catalog</h5>
+            <form id="productFilterForm" method="GET" action="{{ url_for('products') }}" class="d-flex align-items-center">
+                <div class="input-group me-2">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-start-0" placeholder="Search by name or SKU..." value="{{ request.args.get('search', '') }}">
+                </div>
+                
+                <select name="category" class="form-select me-2">
+                    <option value="">All Categories</option>
+                    {% for value, label in categories %}
+                        <option value="{{ value }}" {% if request.args.get('category') == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                
+                <select name="gender" class="form-select me-2">
+                    <option value="">All Genders</option>
+                    {% for value, label in genders %}
+                        <option value="{{ value }}" {% if request.args.get('gender') == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i> Filter
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if products.items %}
+            <div class="row g-4 p-4">
+                {% for product in products.items %}
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="card h-100 product-card">
+                            <div class="position-relative">
+                                {% if product.image_path %}
+                                    <img src="{{ url_for('static', filename=product.image_path.replace('static/', '')) }}" alt="{{ product.name }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <i class="fas fa-box fa-3x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                <span class="badge bg-primary position-absolute top-0 end-0 m-2">{{ product.category|format_category }}</span>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">{{ product.name }}</h5>
+                                <p class="card-text text-muted small mb-2">SKU: {{ product.sku }}</p>
+                                <p class="card-text text-muted small mb-2">
+                                    {% if product.gender %}
+                                        <span class="me-2">{{ product.gender|format_gender }}</span>
+                                    {% endif %}
+                                    {% if product.size %}
+                                        <span class="me-2">Size: {{ product.size }}</span>
+                                    {% endif %}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0 currency">{{ product.price }}</h5>
+                                    
+                                    {% if product.id in inventory_data %}
+                                        {% set inventory = inventory_data[product.id] %}
+                                        <span class="badge {% if inventory.quantity <= 0 %}bg-danger{% elif inventory.quantity <= inventory.min_stock_level %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                            {{ inventory.quantity }} in stock
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Not in inventory</span>
+                                    {% endif %}
+                                </div>
+                                <div class="mt-auto">
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ url_for('view_product', product_id=product.id) }}" class="btn btn-outline-primary btn-sm flex-grow-1">
+                                            <i class="fas fa-eye me-1"></i> View Details
+                                        </a>
+                                        {% if current_user.role in ['retailer', 'customer', 'wholesaler'] %}
+                                            {% if product.id in inventory_data and inventory_data[product.id].quantity > 0 %}
+                                                <a href="{{ url_for('create_order', product_id=product.id) }}" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-shopping-cart"></i>
+                                                </a>
+                                            {% else %}
+                                                <button class="btn btn-secondary btn-sm" disabled title="Out of stock">
+                                                    <i class="fas fa-shopping-cart"></i>
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if products.pages > 1 %}
+                <div class="d-flex justify-content-center py-4">
+                    <nav aria-label="Product pagination">
+                        <ul class="pagination">
+                            {% if products.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('products', page=products.prev_num, search=request.args.get('search', ''), category=request.args.get('category', ''), gender=request.args.get('gender', '')) }}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in products.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                {% if page_num %}
+                                    <li class="page-item {{ 'active' if page_num == products.page else '' }}">
+                                        <a class="page-link" href="{{ url_for('products', page=page_num, search=request.args.get('search', ''), category=request.args.get('category', ''), gender=request.args.get('gender', '')) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#">...</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if products.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('products', page=products.next_num, search=request.args.get('search', ''), category=request.args.get('category', ''), gender=request.args.get('gender', '')) }}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center p-5">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <h5>No products found</h5>
+                <p class="text-muted">
+                    {% if request.args.get('search') or request.args.get('category') or request.args.get('gender') %}
+                        Try adjusting your search filters
+                    {% else %}
+                        There are no products in the catalog yet
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('products') }}" class="btn btn-outline-primary mt-2">
+                    <i class="fas fa-sync-alt me-1"></i> View All Products
+                </a>
+                
+                {% if current_user.role == 'manufacturer' %}
+                    <a href="{{ url_for('create_product') }}" class="btn btn-primary mt-2 ms-2">
+                        <i class="fas fa-plus me-1"></i> Add Product
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Category Filters -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fas fa-tags me-2"></i>Browse by Category</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <a href="{{ url_for('products', category=ProductCategory.TSHIRT) }}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="fas fa-tshirt d-block mb-2 fa-2x"></i>
+                            T-Shirts
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="{{ url_for('products', category=ProductCategory.SHOES) }}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="fas fa-shoe-prints d-block mb-2 fa-2x"></i>
+                            Shoes
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="{{ url_for('products', category=ProductCategory.ACCESSORIES) }}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="fas fa-glasses d-block mb-2 fa-2x"></i>
+                            Accessories
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <a href="{{ url_for('products', category=ProductCategory.DRESS) }}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="fas fa-female d-block mb-2 fa-2x"></i>
+                            Dresses
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Format currency values
+        const currencyElements = document.querySelectorAll('.currency');
+        currencyElements.forEach(function(element) {
+            const value = parseFloat(element.textContent);
+            if (!isNaN(value)) {
+                element.textContent = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD'
+                }).format(value);
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends "layout.html" %}
+
+{% block title %}Profile - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center py-5">
+                    <div class="avatar-circle mx-auto mb-3">
+                        <div class="initials">{{ user.username[0]|upper }}</div>
+                    </div>
+                    <h4 class="card-title mb-0">{{ user.username }}</h4>
+                    <p class="text-muted">{{ role_name }}</p>
+                    
+                    {% if user.company_name %}
+                        <span class="badge bg-secondary mb-3">{{ user.company_name }}</span>
+                    {% endif %}
+                    
+                    <p class="text-muted small">
+                        <i class="fas fa-calendar-alt me-1"></i> Joined {{ user.created_at.strftime('%B %d, %Y') }}
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Account Settings</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-key text-primary me-2"></i> Change Password
+                                </div>
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-bell text-primary me-2"></i> Notification Settings
+                                </div>
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-building text-primary me-2"></i> Update Company Info
+                                </div>
+                                <i class="fas fa-chevron-right text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Username</p>
+                            <p class="fw-bold">{{ user.username }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Email</p>
+                            <p class="fw-bold">{{ user.email }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Role</p>
+                            <p class="fw-bold">{{ role_name }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Company Name</p>
+                            <p class="fw-bold">{{ user.company_name or 'Not specified' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="text-muted mb-1">Member Since</p>
+                            <p class="fw-bold">{{ user.created_at.strftime('%B %d, %Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Supply Chain Role Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-sitemap me-2"></i>Your Role</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.role == 'manufacturer' %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle bg-primary p-3 me-3">
+                                <i class="fas fa-industry fa-2x text-white"></i>
+                            </div>
+                            <div>
+                                <h5>Manufacturer</h5>
+                                <p class="mb-0 text-muted">Create and supply products to wholesalers</p>
+                            </div>
+                        </div>
+                        <p>As a manufacturer, you are at the beginning of the supply chain. You can:</p>
+                        <ul>
+                            <li>Create and manage product catalog</li>
+                            <li>Supply products to wholesalers</li>
+                            <li>Monitor inventory levels</li>
+                            <li>Track product demand across the supply chain</li>
+                        </ul>
+                    {% elif user.role == 'wholesaler' %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle bg-primary p-3 me-3">
+                                <i class="fas fa-warehouse fa-2x text-white"></i>
+                            </div>
+                            <div>
+                                <h5>Wholesaler</h5>
+                                <p class="mb-0 text-muted">Purchase from manufacturers and supply to retailers</p>
+                            </div>
+                        </div>
+                        <p>As a wholesaler, you are the key distributor in the supply chain. You can:</p>
+                        <ul>
+                            <li>Purchase products from manufacturers</li>
+                            <li>Supply products to retailers</li>
+                            <li>Manage bulk inventory</li>
+                            <li>Track product movement through the supply chain</li>
+                        </ul>
+                    {% elif user.role == 'retailer' %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle bg-primary p-3 me-3">
+                                <i class="fas fa-store fa-2x text-white"></i>
+                            </div>
+                            <div>
+                                <h5>Retailer</h5>
+                                <p class="mb-0 text-muted">Purchase from wholesalers and sell to customers</p>
+                            </div>
+                        </div>
+                        <p>As a retailer, you are the direct link to customers. You can:</p>
+                        <ul>
+                            <li>Purchase products from wholesalers</li>
+                            <li>Sell products to customers</li>
+                            <li>Manage retail inventory</li>
+                            <li>Track customer demand patterns</li>
+                        </ul>
+                    {% else %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle bg-primary p-3 me-3">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                            <div>
+                                <h5>Customer</h5>
+                                <p class="mb-0 text-muted">Purchase products from retailers</p>
+                            </div>
+                        </div>
+                        <p>As a customer, you are at the end of the supply chain. You can:</p>
+                        <ul>
+                            <li>Browse products from retailers</li>
+                            <li>Purchase products for your needs</li>
+                            <li>Track your order status</li>
+                            <li>Manage your purchase history</li>
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Activity & Stats -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Activity & Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="p-3">
+                                <h2 class="fw-bold">{{ inventory_count|default(0) }}</h2>
+                                <p class="text-muted mb-0">Items in Inventory</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="p-3">
+                                <h2 class="fw-bold">{{ orders_placed|default(0) }}</h2>
+                                <p class="text-muted mb-0">Orders Placed</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="p-3">
+                                <h2 class="fw-bold">{{ orders_received|default(0) }}</h2>
+                                <p class="text-muted mb-0">Orders Received</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

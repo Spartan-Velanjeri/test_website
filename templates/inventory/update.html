@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+
+{% block title %}Update Inventory - Supply Chain Manager{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('inventory') }}">Inventory</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Update Inventory</li>
+                </ol>
+            </nav>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-light">
+                    <h4 class="mb-0">Update Inventory: {{ product.name }}</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            {% if product.image_path %}
+                                <img src="{{ url_for('static', filename=product.image_path.replace('static/', '')) }}" alt="{{ product.name }}" class="img-fluid rounded">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 150px;">
+                                    <i class="fas fa-box fa-3x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h5>{{ product.name }}</h5>
+                            <p class="text-muted mb-2">SKU: {{ product.sku }}</p>
+                            <p class="text-muted mb-2">Category: {{ product.category|format_category }}</p>
+                            <p class="text-muted mb-2">Price: <span class="currency">{{ product.price }}</span></p>
+                            
+                            <div class="mb-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">Current Stock:</span>
+                                    <span class="badge {% if inventory_item.quantity <= 0 %}bg-danger{% elif inventory_item.quantity <= inventory_item.min_stock_level %}bg-warning text-dark{% else %}bg-success{% endif %} px-3 py-2">
+                                        {{ inventory_item.quantity }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="me-2">Minimum Level:</span>
+                                <span class="badge bg-info px-3 py-2">
+                                    {{ inventory_item.min_stock_level }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('update_inventory', inventory_id=inventory_item.id) }}">
+                        {{ form.hidden_tag() }}
+                        {{ form.product_id }}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.quantity.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <button type="button" class="btn btn-outline-secondary" data-adjust="-10">-10</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-adjust="-1">-1</button>
+                                        
+                                        {% if form.quantity.errors %}
+                                            {{ form.quantity(class="form-control text-center is-invalid") }}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.quantity.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            {{ form.quantity(class="form-control text-center") }}
+                                        {% endif %}
+                                        
+                                        <button type="button" class="btn btn-outline-secondary" data-adjust="1">+1</button>
+                                        <button type="button" class="btn btn-outline-secondary" data-adjust="10">+10</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.min_stock_level.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {% if form.min_stock_level.errors %}
+                                            {{ form.min_stock_level(class="form-control is-invalid") }}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.min_stock_level.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            {{ form.min_stock_level(class="form-control") }}
+                                        {% endif %}
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        The system will alert you when stock falls below this level.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle fa-2x me-3"></i>
+                                <div>
+                                    <h5 class="mb-1">Inventory Management Tip</h5>
+                                    <p class="mb-0">
+                                        Set your minimum stock level based on how long it takes to reorder and receive new inventory, 
+                                        and how quickly the item typically sells.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('inventory') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Back to Inventory
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
+{% endblock %}
